@@ -787,6 +787,57 @@ func (impl Implementation) Dlaswp(n int, a []float64, lda, k1, k2 int, ipiv []in
 	lapacke.Dlaswp(n, a, lda, k1+1, k2+1, ipiv32, incX)
 }
 
+// Dpbtrf computes the Cholesky factorization of an n×n symmetric positive
+// definite band matrix
+//  A = U^T * U  if uplo == blas.Upper
+//  A = L * L^T  if uplo == blas.Lower
+// where U is an upper triangular band matrix and L is lower triangular. kd is
+// the number of super- or sub-diagonals of A.
+//
+// The band storage scheme is illustrated below when n = 6 and kd = 2. Elements
+// marked * are not used by the function.
+//
+//  uplo == blas.Upper
+//  On entry:         On return:
+//   a00  a01  a02     u00  u01  u02
+//   a11  a12  a13     u11  u12  u13
+//   a22  a23  a24     u22  u23  u24
+//   a33  a34  a35     u33  u34  u35
+//   a44  a45   *      u44  u45   *
+//   a55   *    *      u55   *    *
+//
+//  uplo == blas.Lower
+//  On entry:         On return:
+//    *    *   a00       *    *   l00
+//    *   a10  a11       *   l10  l11
+//   a20  a21  a22      l20  l21  l22
+//   a31  a32  a33      l31  l32  l33
+//   a42  a43  a44      l42  l43  l44
+//   a53  a54  a55      l53  l54  l55
+func (impl Implementation) Dpbtrf(uplo blas.Uplo, n, kd int, ab []float64, ldab int) (ok bool) {
+	switch {
+	case uplo != blas.Upper && uplo != blas.Lower:
+		panic(badUplo)
+	case n < 0:
+		panic(nLT0)
+	case kd < 0:
+		panic(kdLT0)
+	case ldab < kd+1:
+		panic(badLdA)
+	}
+
+	// Quick return if possible.
+	if n == 0 {
+		return true
+	}
+
+	if len(ab) < (n-1)*ldab+kd+1 {
+		panic(shortAB)
+	}
+
+	return lapacke.Dpbtrf(byte(uplo), n, kd, ab, ldab)
+}
+
 // Dpotrf computes the Cholesky decomposition of the symmetric positive definite
 // matrix a. If ul == blas.Upper, then a is stored as an upper-triangular matrix,
 // and a = U U^T is stored in place into a. If ul == blas.Lower, then a = L L^T
