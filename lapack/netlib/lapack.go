@@ -838,6 +838,46 @@ func (impl Implementation) Dpbtrf(uplo blas.Uplo, n, kd int, ab []float64, ldab 
 	return lapacke.Dpbtrf(byte(uplo), n, kd, ab, ldab)
 }
 
+// Dpbtrs solves a system of linear equations A*X = B with an n×n symmetric
+// positive definite band matrix A using the Cholesky factorization
+//  A = U^T * U  if uplo == blas.Upper
+//  A = L * L^T  if uplo == blas.Lower
+// computed by Dpbtrf. kd is the number of super- or sub-diagonals of A. See the
+// documentation for Dpbtrf for a description of the band storage format of A.
+//
+// On entry, b contains the n×nrhs right hand side matrix B. On return, it is
+// overwritten with the solution matrix X.
+func (Implementation) Dpbtrs(uplo blas.Uplo, n, kd, nrhs int, ab []float64, ldab int, b []float64, ldb int) {
+	switch {
+	case uplo != blas.Upper && uplo != blas.Lower:
+		panic(badUplo)
+	case n < 0:
+		panic(nLT0)
+	case kd < 0:
+		panic(kdLT0)
+	case nrhs < 0:
+		panic(nrhsLT0)
+	case ldab < kd+1:
+		panic(badLdA)
+	case ldb < max(1, nrhs):
+		panic(badLdB)
+	}
+
+	// Quick return if possible.
+	if n == 0 || nrhs == 0 {
+		return
+	}
+
+	if len(ab) < (n-1)*ldab+kd {
+		panic(shortAB)
+	}
+	if len(b) < (n-1)*ldb+nrhs {
+		panic(shortB)
+	}
+
+	lapacke.Dpbtrs(byte(uplo), n, kd, nrhs, ab, ldab, b, ldb)
+}
+
 // Dpotrf computes the Cholesky decomposition of the symmetric positive definite
 // matrix a. If ul == blas.Upper, then a is stored as an upper-triangular matrix,
 // and a = U U^T is stored in place into a. If ul == blas.Lower, then a = L L^T

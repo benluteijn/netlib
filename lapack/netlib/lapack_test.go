@@ -108,6 +108,10 @@ func TestDpbtrf(t *testing.T) {
 	testlapack.DpbtrfTest(t, impl)
 }
 
+func TestDpbtrs(t *testing.T) {
+	testlapack.DpbtrsTest(t, impl)
+}
+
 func TestDpotrf(t *testing.T) {
 	testlapack.DpotrfTest(t, impl)
 }
